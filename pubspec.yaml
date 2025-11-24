@@ -43,6 +43,7 @@ dependencies:
   riverpod_annotation: ^3.0.3
   path: ^1.9.1
   sqlite3: ^2.9.4
+  connectivity_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:
