@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hubo/core/routing/routes.dart';
+import 'package:hubo/feature/auth/data/providers.dart';
+import 'package:hubo/feature/auth/presentation/notifier/auth_notifier.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({Key? key, this.onLogin, this.onSignup}) : super(key: key);
 
   /// Optional async callback invoked when the user taps Login.
-  /// If not provided the screen will show a SnackBar instead.
+  /// If not provided the screen will call the `AuthRepository`.
   final Future<void> Function(String email, String password)? onLogin;
 
   /// Optional callback invoked when the user taps Sign up.
@@ -14,10 +18,10 @@ class LoginScreen extends StatefulWidget {
   final VoidCallback? onSignup;
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -43,12 +47,24 @@ class _LoginScreenState extends State<LoginScreen> {
       if (widget.onLogin != null) {
         await widget.onLogin!(email, password);
       } else {
-        // Simulate a short delay to show the loading state.
-        await Future.delayed(const Duration(milliseconds: 400));
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Logged in as $email')));
+        try {
+          final user = await ref
+              .read(authProvider.notifier)
+              .login(email, password);
+          debugPrint(
+            'Login response: id=${user.id}, email=${user.email}, token=${user.token}',
+          );
+          if (!mounted) return;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Logged in as $email')));
+          context.pushNamed(AppRoute.dashboard);
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Login failed: ${e.toString()}')),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
