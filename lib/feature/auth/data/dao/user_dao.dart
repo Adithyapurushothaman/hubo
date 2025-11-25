@@ -25,4 +25,23 @@ class UserDao extends DatabaseAccessor<AppDb> with _$UserDaoMixin {
   Future<UserData?> getUser() {
     return select(db.user).getSingleOrNull();
   }
+
+  /// Update the token for a user with [id]. Use `token == null` to clear it.
+  Future<int> updateToken(int id, String? token) async {
+    final companion = UserCompanion(token: Value(token));
+    return (update(
+      db.user,
+    )..where((tbl) => tbl.id.equals(id))).write(companion);
+  }
+
+  /// Returns the stored token for the first user, or null if none.
+  Future<String?> getToken() async {
+    final user = await getUser();
+    return user?.token;
+  }
+
+  /// Delete all users from the table (used for logout/clear data).
+  Future<int> deleteAllUsers() async {
+    return delete(db.user).go();
+  }
 }

@@ -28,7 +28,14 @@ class AppRouter {
         GoRoute(
           path: '/${AppRoute.login}',
           name: AppRoute.login,
-          builder: (context, state) => const LoginScreen(),
+          builder: (context, state) {
+            String? email;
+            final extra = state.extra;
+            if (extra is Map<String, dynamic> && extra['email'] is String) {
+              email = extra['email'] as String;
+            }
+            return LoginScreen(initialEmail: email);
+          },
         ),
         GoRoute(
           path: '/${AppRoute.signup}',

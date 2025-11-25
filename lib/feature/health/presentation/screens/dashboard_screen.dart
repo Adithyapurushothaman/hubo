@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hubo/core/routing/routes.dart';
+import 'package:hubo/feature/auth/presentation/notifier/auth_notifier.dart';
+import 'package:hubo/core/constants/palette.dart';
 import 'package:hubo/feature/health/presentation/notifier/vitals_notifier.dart';
+import 'package:hubo/feature/health/presentation/widget/state_card.dart';
+import 'package:lottie/lottie.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -36,11 +40,25 @@ class DashboardScreen extends ConsumerWidget {
     final sleepToday = (slWeek.isNotEmpty ? slWeek.last : 0.0);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Today's Dashboard")),
-      floatingActionButton: FloatingActionButton.extended(
+      appBar: AppBar(
+        title: const Text("Hubo One", style: TextStyle(color: Palette.primary)),
+        backgroundColor: Palette.surface,
+        actions: [
+          IconButton(
+            tooltip: 'Logout',
+            icon: const Icon(Icons.logout, color: Palette.primary),
+            onPressed: () {
+              // Trigger logout and navigate to login screen.
+              ref.read(authProvider.notifier).logout();
+              context.goNamed(AppRoute.login);
+            },
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Palette.primary,
         onPressed: () => context.pushNamed(AppRoute.dailyVitals),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Vitals'),
+        child: const Icon(Icons.add),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -55,33 +73,36 @@ class DashboardScreen extends ConsumerWidget {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Heart Rate',
-                      value: '$hrToday bpm',
-                      icon: Icons.favorite,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Steps',
-                      value: '$stepsToday',
-                      icon: Icons.directions_walk,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Sleep',
-                      value: '${sleepToday.toStringAsFixed(1)} h',
-                      icon: Icons.bedtime,
-                    ),
-                  ),
-                ],
+              SizedBox(
+                height: 120, // adjust as needed
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: 3,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (_, index) {
+                    if (index == 0) {
+                      return StatCard(
+                        title: 'Heart Rate',
+                        value: '$hrToday bpm',
+                        asset: 'assets/animations/heart_beat.json',
+                      );
+                    } else if (index == 1) {
+                      return StatCard(
+                        title: 'Steps count',
+                        value: '$stepsToday',
+                        asset: 'assets/animations/step_count.json',
+                      );
+                    } else {
+                      return StatCard(
+                        title: 'Sleep hour',
+                        value: '${sleepToday.toStringAsFixed(1)} h',
+                        asset: 'assets/animations/sleep.json',
+                      );
+                    }
+                  },
+                ),
               ),
+
               const SizedBox(height: 20),
               const Text(
                 '7-day overview',
@@ -150,60 +171,6 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    Key? key,
-    required this.title,
-    required this.value,
-    required this.icon,
-  }) : super(key: key);
-
-  final String title;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            CircleAvatar(child: Icon(icon, size: 20)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );

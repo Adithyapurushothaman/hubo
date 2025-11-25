@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -15,7 +16,29 @@ class AppDb extends _$AppDb {
   AppDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await m.createAll();
+    },
+    onUpgrade: (m, from, to) async {
+      // If the DB was created with schemaVersion 1, add the `token`
+      // column that was introduced in schema version 2.
+      if (from < 2) {
+        try {
+          await m.addColumn(user, user.token);
+        } catch (e) {
+          // If adding column fails, log it — don't crash the app here.
+          try {
+            // ignore: avoid_print
+            debugPrint('Failed to add token column during migration: $e');
+          } catch (_) {}
+        }
+      }
+    },
+  );
 }
 
 /// A shared AppDb instance you can import from anywhere.

@@ -2,19 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:hubo/core/routing/app_router.dart';
 import 'package:hubo/core/routing/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hubo/feature/health/data/providers.dart';
 import 'package:hubo/feature/health/data/sync/sync_service.dart';
+import 'package:hubo/core/db/app_database.dart';
 
-void main() {
-  // Create router with initial location set to the login route
-  final appRouter = AppRouter(AppRoute.login);
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Determine initial route by checking whether a user with a token exists.
+  String initialRoute = AppRoute.login;
+  try {
+    final user = await appDb.userDao.getUser();
+    if (user != null && (user.token != null && user.token!.isNotEmpty)) {
+      initialRoute = AppRoute.dashboard;
+    }
+  } catch (e) {
+    try {
+      // ignore: avoid_print
+      debugPrint('Error checking user during startup: $e');
+    } catch (_) {}
+  }
+
+  // Create router with computed initial location
+  final appRouter = AppRouter(initialRoute);
   // Create a ProviderContainer to allow reading providers before runApp.
   final container = ProviderContainer();
 
-  // Start sync service using the repository from providers (can be overridden in tests).
-  final repo = container.read(vitalsRepositoryProvider);
-  final syncService = SyncService(repo);
-  syncService.start();
+  // Ensure the SyncService provider is created so it starts automatically.
+  container.read(syncServiceProvider);
 
   runApp(
     UncontrolledProviderScope(

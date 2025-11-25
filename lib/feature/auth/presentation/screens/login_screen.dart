@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hubo/core/routing/routes.dart';
-import 'package:hubo/feature/auth/data/providers.dart';
 import 'package:hubo/feature/auth/presentation/notifier/auth_notifier.dart';
+import 'package:hubo/core/constants/palette.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({Key? key, this.onLogin, this.onSignup}) : super(key: key);
+  const LoginScreen({Key? key, this.onLogin, this.onSignup, this.initialEmail})
+    : super(key: key);
 
   /// Optional async callback invoked when the user taps Login.
   /// If not provided the screen will call the `AuthRepository`.
@@ -16,6 +17,9 @@ class LoginScreen extends ConsumerStatefulWidget {
   /// Optional callback invoked when the user taps Sign up.
   /// If not provided the screen will try to navigate to `/signup`.
   final VoidCallback? onSignup;
+
+  /// Optional initial email to prefill the email field (useful after signup).
+  final String? initialEmail;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -33,6 +37,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // If an initial email was provided (via routing `extra`), prefill the
+    // email controller so the user doesn't have to re-type it.
+    if (widget.initialEmail != null && widget.initialEmail!.isNotEmpty) {
+      _emailCtrl.text = widget.initialEmail!;
+    }
   }
 
   void _tryLogin() async {
@@ -58,7 +72,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Logged in as $email')));
-          context.pushNamed(AppRoute.dashboard);
+          context.goNamed(AppRoute.dashboard);
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -74,13 +88,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void _onSignup() {
     if (widget.onSignup != null) return widget.onSignup!.call();
     // Use GoRouter to push the named signup route.
-    context.pushNamed(AppRoute.signup);
+    context.goNamed(AppRoute.signup);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      backgroundColor: Palette.surface,
+      appBar: AppBar(
+        // title: const Text(
+        //   "Hubo One",
+        //   style: TextStyle(
+        //     color: Palette.surface,
+        //     fontFamily: 'Roboto',
+        //     fontWeight: FontWeight.w600,
+        //     fontSize: 24,
+        //   ),
+        // ),
+        backgroundColor: Palette.surface,
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -88,6 +114,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             constraints: const BoxConstraints(maxWidth: 600),
             child: Card(
               elevation: 2,
+              color: Palette.card,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -99,6 +126,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // App logo area
+                      Center(
+                        child: Image.asset(
+                          'assets/icons/hubo_launcher_icon.png',
+                          height: 120,
+                          width: 120,
+                        ),
+                      ),
                       const Text(
                         'Welcome back',
                         style: TextStyle(
@@ -156,6 +191,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       SizedBox(
                         height: 48,
                         child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Palette.primary,
+                            foregroundColor: Palette.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                           onPressed: _isLoading ? null : _tryLogin,
                           child: _isLoading
                               ? const SizedBox(
@@ -163,7 +205,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color: Palette.onPrimary,
                                   ),
                                 )
                               : const Text('Login'),
@@ -176,7 +218,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const Text("Don't have an account?"),
                           TextButton(
                             onPressed: _onSignup,
-                            child: const Text('Sign up'),
+                            child: const Text(
+                              'Sign up',
+                              style: TextStyle(color: Palette.primary),
+                            ),
                           ),
                         ],
                       ),

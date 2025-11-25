@@ -1,12 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hubo/core/routing/routes.dart';
+import 'package:hubo/feature/auth/data/providers.dart';
+import 'package:hubo/core/constants/palette.dart';
 
-class SignupScreen extends StatefulWidget {
+class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({Key? key, this.onSignup, this.onLogin}) : super(key: key);
 
   /// Optional async callback invoked when the user taps Sign up.
-  /// If not provided the screen will show a SnackBar.
+  /// If not provided the screen will call the `AuthNotifier`.
   final Future<void> Function(String username, String email, String password)?
   onSignup;
 
@@ -15,10 +19,10 @@ class SignupScreen extends StatefulWidget {
   final VoidCallback? onLogin;
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
@@ -46,11 +50,27 @@ class _SignupScreenState extends State<SignupScreen> {
       if (widget.onSignup != null) {
         await widget.onSignup!(username, email, password);
       } else {
-        await Future.delayed(const Duration(milliseconds: 400));
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Signed up as $username')));
+        try {
+          final repo = ref.read(authRepositoryProvider);
+          final user = await repo.signup(username, email, password);
+          debugPrint(
+            'Signup response: id=${user.id}, email=${user.email}, token=${user.token}',
+          );
+          if (!mounted) return;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Signed up as $username')));
+          // Navigate to login and prefill the email field via query param.
+          // Use a raw path with query string to avoid compatibility issues
+          // with different go_router versions.
+          // Pass the email via `extra` to avoid depending on query-parsing APIs.
+          context.push('/${AppRoute.login}', extra: {'email': email});
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Signup failed: ${e.toString()}')),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -59,13 +79,17 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _onLoginLink() {
     if (widget.onLogin != null) return widget.onLogin!.call();
-    context.pushNamed(AppRoute.login);
+    context.pop(AppRoute.login);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign up')),
+      backgroundColor: Palette.surface,
+      appBar: AppBar(
+        // title: const Text("Hubo One", style: TextStyle(color: Palette.primary)),
+        backgroundColor: Palette.surface,
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -73,6 +97,7 @@ class _SignupScreenState extends State<SignupScreen> {
             constraints: const BoxConstraints(maxWidth: 600),
             child: Card(
               elevation: 2,
+              color: Palette.card,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -84,6 +109,16 @@ class _SignupScreenState extends State<SignupScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: Image.asset(
+                            'assets/icons/hubo_launcher_icon.png',
+                            height: 120,
+                            width: 120,
+                          ),
+                        ),
+                      ),
                       const Text(
                         'Create account',
                         style: TextStyle(
@@ -157,6 +192,13 @@ class _SignupScreenState extends State<SignupScreen> {
                       SizedBox(
                         height: 48,
                         child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Palette.primary,
+                            foregroundColor: Palette.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                           onPressed: _isLoading ? null : _trySignup,
                           child: _isLoading
                               ? const SizedBox(
@@ -164,7 +206,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color: Palette.onPrimary,
                                   ),
                                 )
                               : const Text('Sign up'),
@@ -177,13 +219,46 @@ class _SignupScreenState extends State<SignupScreen> {
                           const Text('Already have an account?'),
                           TextButton(
                             onPressed: _onLoginLink,
-                            child: const Text('Login'),
+                            child: const Text(
+                              'Login',
+                              style: TextStyle(color: Palette.primary),
+                            ),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogo() {
+    return SizedBox(
+      height: 84,
+      width: 84,
+      child: Material(
+        shape: const CircleBorder(),
+        elevation: 2,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () {},
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: primaryGradient,
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              'H',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),

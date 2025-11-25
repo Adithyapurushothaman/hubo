@@ -1,6 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hubo/feature/auth/domain/entities/user_entity.dart';
 import 'package:hubo/feature/auth/data/providers.dart';
+import 'package:hubo/core/db/app_database.dart';
+import 'package:hubo/feature/auth/data/model/user_model.dart';
+import 'package:drift/drift.dart';
 part 'auth_notifier.g.dart';
 
 class AuthState {
@@ -34,15 +38,111 @@ class AuthNotifier extends _$AuthNotifier {
     try {
       final repo = ref.read(authRepositoryProvider);
       final user = await repo.login(email, password);
-      state = state.copyWith(user: user, isLoading: false, error: null);
+      // persist token in local DB for auth status checks
+      try {
+        final existing = await appDb.userDao.getUser();
+        if (existing != null) {
+          await appDb.userDao.updateToken(existing.id!, user.token);
+        } else {
+          final companion = UserCompanion.insert(
+            email: user.email,
+            password: '',
+            token: Value(user.token),
+          );
+          final id = await appDb.userDao.addUser(companion);
+          try {
+            // ignore: avoid_print
+            debugPrint('Inserted user id: $id');
+          } catch (_) {}
+        }
+      } catch (ex, st) {
+        // Log DB exceptions so we can diagnose why persistence failed.
+        // Avoid crashing the app; auth still succeeds.
+        try {
+          // ignore: avoid_print
+          debugPrint('AppDb persistence error during login: $ex');
+          // ignore: avoid_print
+          debugPrint('$st');
+        } catch (_) {}
+      }
+      // The provider may have been disposed while awaiting async work.
+      // Avoid using `state` (which accesses `ref`) when disposed.
+      if (ref.mounted) {
+        state = state.copyWith(user: user, isLoading: false, error: null);
+      }
       return user;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
+      rethrow;
+    }
+  }
+
+  Future<UserEntity> signup(
+    String username,
+    String email,
+    String password,
+  ) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final user = await repo.signup(username, email, password);
+
+      // persist token in local DB for auth status checks
+      try {
+        final existing = await appDb.userDao.getUser();
+        if (existing != null) {
+          await appDb.userDao.updateToken(existing.id, user.token);
+        } else {
+          final companion = UserCompanion.insert(
+            email: user.email,
+            password: '',
+            token: Value(user.token),
+          );
+          final id = await appDb.userDao.addUser(companion);
+          try {
+            // ignore: avoid_print
+            debugPrint('Inserted user id: $id');
+          } catch (_) {}
+        }
+      } catch (ex, st) {
+        try {
+          // ignore: avoid_print
+          debugPrint('AppDb persistence error during signup: $ex');
+          // ignore: avoid_print
+          debugPrint('$st');
+        } catch (_) {}
+      }
+
+      if (ref.mounted) {
+        state = state.copyWith(user: user, isLoading: false, error: null);
+      }
+      return user;
+    } catch (e) {
+      if (ref.mounted) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
       rethrow;
     }
   }
 
   void logout() {
-    state = AuthState.initial();
+    // Clear persisted user data from the local DB as part of logout.
+    // Don't await here to avoid blocking the UI event; run async and
+    // update state when complete.
+    () async {
+      try {
+        await appDb.userDao.deleteAllUsers();
+      } catch (e) {
+        try {
+          // ignore: avoid_print
+          debugPrint('Error clearing user data during logout: $e');
+        } catch (_) {}
+      }
+      if (ref.mounted) {
+        state = AuthState.initial();
+      }
+    }();
   }
 }
