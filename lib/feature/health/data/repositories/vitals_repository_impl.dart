@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:hubo/core/db/app_database.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:hubo/feature/health/domain/entities/vital_entity.dart';
 import 'package:hubo/feature/health/domain/repositories/vitals_repository.dart';
 
@@ -11,12 +12,24 @@ class VitalsRepositoryImpl implements VitalsRepository {
 
   @override
   Future<int> addVital(VitalEntity vital) async {
+    // Decide sync status based on current connectivity.
+    // As requested: when network is present -> syncStatus = 0,
+    // when network is not present -> syncStatus = 1.
+    int status = 0;
+    try {
+      final conn = await Connectivity().checkConnectivity();
+      status = conn != ConnectivityResult.none ? 0 : 1;
+    } catch (_) {
+      // If connectivity check fails, conservatively assume offline.
+      status = 1;
+    }
+
     final companion = VitalsCompanion.insert(
       heartRate: vital.heartRate,
       steps: vital.steps,
       sleepHours: vital.sleepHours,
       createdAt: vital.createdAt,
-      // syncStatus will default to 0 (unsynced)
+      syncStatus: Value(status),
     );
 
     return await db.into(db.vitals).insert(companion);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hubo/core/constants/palette.dart';
 import 'package:hubo/feature/health/presentation/notifier/vitals_notifier.dart';
 
 class DailyVitalsScreen extends ConsumerStatefulWidget {
@@ -65,13 +66,18 @@ class _DailyVitalsScreenState extends ConsumerState<DailyVitalsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Daily Vitals')),
+      backgroundColor: Palette.surface,
+      // appBar: AppBar(
+      //   title: const Text('Add Daily Vitals'),
+      //   backgroundColor: Palette.primary,
+      // ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
             child: Card(
+              color: Palette.card,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -84,6 +90,16 @@ class _DailyVitalsScreenState extends ConsumerState<DailyVitalsScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: Image.asset(
+                            'assets/icons/hubo_launcher_icon.png',
+                            height: 120,
+                            width: 120,
+                          ),
+                        ),
+                      ),
                       const Text(
                         'Add daily vitals',
                         style: TextStyle(
@@ -149,6 +165,13 @@ class _DailyVitalsScreenState extends ConsumerState<DailyVitalsScreen> {
                       SizedBox(
                         height: 48,
                         child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Palette.primary,
+                            foregroundColor: Palette.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                           onPressed: _isSaving ? null : _save,
                           child: _isSaving
                               ? const SizedBox(
