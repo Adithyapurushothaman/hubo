@@ -44,6 +44,10 @@ class AuthRepositoryImpl implements AuthRepository {
         }
 
         return UserEntity(id: id, email: returnedEmail, token: token);
+      } else {
+        if (resp.statusCode == 401) {
+          throw Exception('Invalid credentials provided.');
+        }
       }
 
       throw Exception('Login failed with status ${resp.statusCode}');
@@ -113,7 +117,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final existing = await db.userDao.getUser();
 
     if (existing != null) {
-      return db.userDao.updateToken(existing.id!, token);
+      return db.userDao.updateToken(existing.id, token);
     } else {
       final companion = UserCompanion.insert(
         email: email,
