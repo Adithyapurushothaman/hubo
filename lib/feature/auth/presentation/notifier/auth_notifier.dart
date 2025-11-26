@@ -1,6 +1,5 @@
 import 'package:hubo/core/provider/global_provider.dart';
 import 'package:hubo/feature/health/data/providers.dart';
-import 'package:hubo/feature/health/domain/entities/vital_entity.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hubo/feature/auth/domain/entities/user_entity.dart';

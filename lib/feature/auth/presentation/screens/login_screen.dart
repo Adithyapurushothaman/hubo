@@ -95,18 +95,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Palette.surface,
-      appBar: AppBar(
-        // title: const Text(
-        //   "Hubo One",
-        //   style: TextStyle(
-        //     color: Palette.surface,
-        //     fontFamily: 'Roboto',
-        //     fontWeight: FontWeight.w600,
-        //     fontSize: 24,
-        //   ),
-        // ),
-        backgroundColor: Palette.surface,
-      ),
+      appBar: AppBar(backgroundColor: Palette.surface),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),

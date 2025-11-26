@@ -1,5 +1,4 @@
 import 'package:hubo/core/db/app_database.dart';
-import 'package:hubo/core/network/api_client.dart';
 import 'package:hubo/core/network/providers.dart';
 import 'package:hubo/feature/auth/data/api/auth_api.dart';
 import 'package:hubo/feature/auth/data/repositories/auth_repository_impl.dart';

@@ -45,7 +45,7 @@ class DashboardScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Palette.primary,
         onPressed: () => context.pushNamed(AppRoute.dailyVitals),
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Palette.surface),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
