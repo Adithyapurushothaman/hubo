@@ -56,9 +56,6 @@ class VitalsNotifier extends _$VitalsNotifier {
     }
   }
 
-  // --------------------------
-  // ADD VITAL — FIXED VERSION
-  // --------------------------
   Future<int> addVital({
     required int heartRate,
     required int steps,
@@ -87,7 +84,7 @@ class VitalsNotifier extends _$VitalsNotifier {
       await repo.markAsSynced(id);
     }
 
-    // 🔥 Re-fetch ONLY recent 7 items — prevents showing 8 items
+    // Re-fetch ONLY recent 7 items — prevents showing 8 items
     final recent = await repo.fetchRecent(limit: 7);
 
     final unsynced = await repo.getUnsyncedVitals();

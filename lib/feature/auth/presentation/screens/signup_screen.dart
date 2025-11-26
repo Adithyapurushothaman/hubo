@@ -236,34 +236,4 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ),
     );
   }
-
-  Widget _buildLogo() {
-    return SizedBox(
-      height: 84,
-      width: 84,
-      child: Material(
-        shape: const CircleBorder(),
-        elevation: 2,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () {},
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: primaryGradient,
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              'H',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

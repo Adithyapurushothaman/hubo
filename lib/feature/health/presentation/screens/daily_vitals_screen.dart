@@ -62,10 +62,6 @@ class _DailyVitalsScreenState extends ConsumerState<DailyVitalsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Palette.surface,
-      // appBar: AppBar(
-      //   title: const Text('Add Daily Vitals'),
-      //   backgroundColor: Palette.primary,
-      // ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
