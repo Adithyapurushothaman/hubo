@@ -58,9 +58,10 @@ class VitalsRepositoryImpl implements VitalsRepository {
 
   @override
   Future<List<VitalEntity>> fetchRecent({int limit = 7}) async {
-    return (await vitalsDao.fetchRecent(
-      limit: limit,
-    )).map(_mapRowToEntity).toList();
+    final rows = await vitalsDao.fetchRecent(limit: limit);
+
+    // Map each row to VitalEntity
+    return rows.map(_mapRowToEntity).toList();
   }
 
   VitalEntity _mapRowToEntity(Vital row) => VitalEntity(

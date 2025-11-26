@@ -1,6 +1,8 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hubo/feature/health/domain/entities/vital_entity.dart';
 import 'package:hubo/feature/health/data/providers.dart';
+
 part 'vitals_notifier.g.dart';
 
 class VitalsState {
@@ -34,44 +36,29 @@ class VitalsState {
 class VitalsNotifier extends _$VitalsNotifier {
   @override
   VitalsState build() {
-    final initial = VitalsState.initial();
-    // trigger async load after build
     Future.microtask(() => load());
-    return initial;
+    return VitalsState.initial();
   }
 
   Future<void> load() async {
     state = state.copyWith(isLoading: true);
     try {
       final repo = ref.read(vitalsRepositoryProvider);
+
       await repo.ensureMockVitalsIfEmpty();
+
       final recent = await repo.fetchRecent(limit: 7);
       final unsynced = await repo.getUnsyncedVitals();
+
       state = state.copyWith(recent: recent, unsyncedCount: unsynced.length);
     } finally {
       state = state.copyWith(isLoading: false);
     }
   }
 
-  // Future<int> addVital({
-  //   required int heartRate,
-  //   required int steps,
-  //   required double sleepHours,
-  // }) async {
-  //   final entity = VitalEntity(
-  //     id: null,
-  //     heartRate: heartRate,
-  //     steps: steps,
-  //     sleepHours: sleepHours,
-  //     createdAt: DateTime.now(),
-  //     syncStatus: 0,
-  //   );
-
-  //   final repo = ref.read(vitalsRepositoryProvider);
-  //   final id = await repo.addVital(entity);
-  //   await load();
-  //   return id;
-  // }
+  // --------------------------
+  // ADD VITAL — FIXED VERSION
+  // --------------------------
   Future<int> addVital({
     required int heartRate,
     required int steps,
@@ -79,31 +66,33 @@ class VitalsNotifier extends _$VitalsNotifier {
   }) async {
     final repo = ref.read(vitalsRepositoryProvider);
 
-    final entity = VitalEntity(
+    // Network check
+    final connectivityResult = await Connectivity().checkConnectivity();
+    final hasNetwork = connectivityResult != ConnectivityResult.none;
+
+    final newVital = VitalEntity(
       id: null,
       heartRate: heartRate,
       steps: steps,
       sleepHours: sleepHours,
       createdAt: DateTime.now(),
-      syncStatus: 0,
+      syncStatus: hasNetwork ? 1 : 0,
     );
 
-    final id = await repo.addVital(entity);
+    // Insert into DB
+    final id = await repo.addVital(newVital);
 
-    // Insert new entity immediately into UI state
-    final updated = VitalEntity(
-      id: id,
-      heartRate: heartRate,
-      steps: steps,
-      sleepHours: sleepHours,
-      createdAt: entity.createdAt,
-      syncStatus: 0,
-    );
+    // If online → mark synced immediately
+    if (hasNetwork) {
+      await repo.markAsSynced(id);
+    }
 
-    state = state.copyWith(
-      recent: [updated, ...state.recent], // Prepend newest
-      unsyncedCount: state.unsyncedCount + 1,
-    );
+    // 🔥 Re-fetch ONLY recent 7 items — prevents showing 8 items
+    final recent = await repo.fetchRecent(limit: 7);
+
+    final unsynced = await repo.getUnsyncedVitals();
+
+    state = state.copyWith(recent: recent, unsyncedCount: unsynced.length);
 
     return id;
   }

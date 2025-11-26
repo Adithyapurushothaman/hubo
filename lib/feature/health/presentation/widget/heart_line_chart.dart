@@ -40,7 +40,7 @@ class HeartRateLineChart extends StatelessWidget {
             spots: spots,
             isCurved: true,
             color: color,
-            barWidth: 3,
+            barWidth: 5,
             dotData: FlDotData(show: true),
           ),
         ],

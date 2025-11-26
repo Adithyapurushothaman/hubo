@@ -51,13 +51,6 @@ class _DailyVitalsScreenState extends ConsumerState<DailyVitalsScreen> {
         );
 
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Saved locally (id $localId): HR $heart, Steps $steps, Sleep ${sleep.toStringAsFixed(1)}h',
-            ),
-          ),
-        );
         context.pop();
       }
     } finally {

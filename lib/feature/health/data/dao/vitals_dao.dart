@@ -26,10 +26,12 @@ class VitalsDao extends DatabaseAccessor<AppDb> with _$VitalsDaoMixin {
   Future<List<Vital>> fetchRecent({int limit = 7}) {
     return (select(db.vitals)
           ..orderBy([
-            (t) =>
-                OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+            (t) => OrderingTerm(
+              expression: t.createdAt,
+              mode: OrderingMode.desc, // newest first
+            ),
           ])
-          ..limit(limit))
+          ..limit(limit)) // only top 'limit' entries
         .get();
   }
 

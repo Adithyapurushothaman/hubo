@@ -29,7 +29,6 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Hubo One", style: TextStyle(color: Palette.surface)),
         backgroundColor: Palette.accent,
         actions: [
           IconButton(
