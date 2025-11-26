@@ -12,4 +12,12 @@ abstract class VitalsRepository {
 
   /// Fetch most recent N vitals (default 7)
   Future<List<VitalEntity>> fetchRecent({int limit = 7});
+
+  Future<bool> hasVitals();
+
+  Future<void> insertMockVitals();
+
+  Future<void> ensureMockVitalsIfEmpty();
+
+  Future<void> clearAllVitals();
 }

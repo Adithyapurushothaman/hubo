@@ -44,6 +44,7 @@ class VitalsNotifier extends _$VitalsNotifier {
     state = state.copyWith(isLoading: true);
     try {
       final repo = ref.read(vitalsRepositoryProvider);
+      await repo.ensureMockVitalsIfEmpty();
       final recent = await repo.fetchRecent(limit: 7);
       final unsynced = await repo.getUnsyncedVitals();
       state = state.copyWith(recent: recent, unsyncedCount: unsynced.length);
@@ -52,11 +53,32 @@ class VitalsNotifier extends _$VitalsNotifier {
     }
   }
 
+  // Future<int> addVital({
+  //   required int heartRate,
+  //   required int steps,
+  //   required double sleepHours,
+  // }) async {
+  //   final entity = VitalEntity(
+  //     id: null,
+  //     heartRate: heartRate,
+  //     steps: steps,
+  //     sleepHours: sleepHours,
+  //     createdAt: DateTime.now(),
+  //     syncStatus: 0,
+  //   );
+
+  //   final repo = ref.read(vitalsRepositoryProvider);
+  //   final id = await repo.addVital(entity);
+  //   await load();
+  //   return id;
+  // }
   Future<int> addVital({
     required int heartRate,
     required int steps,
     required double sleepHours,
   }) async {
+    final repo = ref.read(vitalsRepositoryProvider);
+
     final entity = VitalEntity(
       id: null,
       heartRate: heartRate,
@@ -66,9 +88,23 @@ class VitalsNotifier extends _$VitalsNotifier {
       syncStatus: 0,
     );
 
-    final repo = ref.read(vitalsRepositoryProvider);
     final id = await repo.addVital(entity);
-    await load();
+
+    // Insert new entity immediately into UI state
+    final updated = VitalEntity(
+      id: id,
+      heartRate: heartRate,
+      steps: steps,
+      sleepHours: sleepHours,
+      createdAt: entity.createdAt,
+      syncStatus: 0,
+    );
+
+    state = state.copyWith(
+      recent: [updated, ...state.recent], // Prepend newest
+      unsyncedCount: state.unsyncedCount + 1,
+    );
+
     return id;
   }
 

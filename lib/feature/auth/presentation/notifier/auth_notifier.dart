@@ -1,9 +1,10 @@
+import 'package:hubo/core/provider/global_provider.dart';
+import 'package:hubo/feature/health/data/providers.dart';
+import 'package:hubo/feature/health/domain/entities/vital_entity.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hubo/feature/auth/domain/entities/user_entity.dart';
-import 'package:hubo/feature/auth/data/providers.dart';
 import 'package:hubo/core/db/app_database.dart';
-import 'package:hubo/feature/auth/data/model/user_model.dart';
 import 'package:drift/drift.dart';
 part 'auth_notifier.g.dart';
 
@@ -36,20 +37,22 @@ class AuthNotifier extends _$AuthNotifier {
   Future<UserEntity> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final repo = ref.read(authRepositoryProvider);
-      final user = await repo.login(email, password);
+      final authRepo = ref.read(authRepositoryProvider);
+      final vitalRepo = ref.read(vitalsRepositoryProvider);
+      final user = await authRepo.login(email, password);
       // persist token in local DB for auth status checks
       try {
-        final existing = await appDb.userDao.getUser();
+        final existing = await authRepo.getUser();
         if (existing != null) {
-          await appDb.userDao.updateToken(existing.id!, user.token);
+          await authRepo.saveToken(existing.email, user.token!);
         } else {
           final companion = UserCompanion.insert(
             email: user.email,
             password: '',
             token: Value(user.token),
           );
-          final id = await appDb.userDao.addUser(companion);
+          await vitalRepo.insertMockVitals();
+          final id = await authRepo.addUser(companion);
           try {
             // ignore: avoid_print
             debugPrint('Inserted user id: $id');
@@ -91,16 +94,16 @@ class AuthNotifier extends _$AuthNotifier {
 
       // persist token in local DB for auth status checks
       try {
-        final existing = await appDb.userDao.getUser();
+        final existing = await repo.getUser();
         if (existing != null) {
-          await appDb.userDao.updateToken(existing.id, user.token);
+          await repo.saveToken(existing.email, user.token!);
         } else {
           final companion = UserCompanion.insert(
             email: user.email,
             password: '',
             token: Value(user.token),
           );
-          final id = await appDb.userDao.addUser(companion);
+          final id = await repo.addUser(companion);
           try {
             // ignore: avoid_print
             debugPrint('Inserted user id: $id');
@@ -133,7 +136,10 @@ class AuthNotifier extends _$AuthNotifier {
     // update state when complete.
     () async {
       try {
-        await appDb.userDao.deleteAllUsers();
+        final authRepo = ref.read(authRepositoryProvider);
+        final vitalRepo = ref.read(vitalsRepositoryProvider);
+        await vitalRepo.clearAllVitals();
+        await authRepo.clearUser();
       } catch (e) {
         try {
           // ignore: avoid_print

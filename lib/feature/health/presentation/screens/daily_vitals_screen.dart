@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hubo/core/constants/palette.dart';
 import 'package:hubo/feature/health/presentation/notifier/vitals_notifier.dart';
 
@@ -57,6 +58,7 @@ class _DailyVitalsScreenState extends ConsumerState<DailyVitalsScreen> {
             ),
           ),
         );
+        context.pop();
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

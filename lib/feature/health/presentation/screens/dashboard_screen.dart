@@ -5,8 +5,9 @@ import 'package:hubo/core/routing/routes.dart';
 import 'package:hubo/feature/auth/presentation/notifier/auth_notifier.dart';
 import 'package:hubo/core/constants/palette.dart';
 import 'package:hubo/feature/health/presentation/notifier/vitals_notifier.dart';
+import 'package:hubo/feature/health/presentation/widget/bar_chart.dart';
+import 'package:hubo/feature/health/presentation/widget/heart_line_chart.dart';
 import 'package:hubo/feature/health/presentation/widget/state_card.dart';
-import 'package:lottie/lottie.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -17,36 +18,23 @@ class DashboardScreen extends ConsumerWidget {
 
     // compute week lists and today's values from state (fallbacks if empty)
     final recent = state.recent;
-    final hrWeek = recent.isNotEmpty
-        ? recent.map((e) => e.heartRate.toDouble()).toList()
-        : [72, 75, 70, 74, 73, 76, 71].map((e) => e.toDouble()).toList();
-    final stWeek = recent.isNotEmpty
-        ? recent.map((e) => e.steps.toDouble()).toList()
-        : [
-            3500,
-            4200,
-            6000,
-            8000,
-            5000,
-            7500,
-            9000,
-          ].map((e) => e.toDouble()).toList();
-    final slWeek = recent.isNotEmpty
-        ? recent.map((e) => e.sleepHours).toList()
-        : [6.5, 7.0, 6.0, 7.5, 8.0, 6.8, 7.2];
 
-    final hrToday = (hrWeek.isNotEmpty ? hrWeek.last.toInt() : 0);
-    final stepsToday = (stWeek.isNotEmpty ? stWeek.last.toInt() : 0);
-    final sleepToday = (slWeek.isNotEmpty ? slWeek.last : 0.0);
+    final hrWeek = recent.map((e) => e.heartRate.toDouble()).toList();
+    final stepsWeek = recent.map((e) => e.steps.toDouble()).toList();
+    final sleepWeek = recent.map((e) => e.sleepHours).toList();
+
+    final hrToday = recent.isNotEmpty ? recent.first.heartRate : 0;
+    final stepsToday = recent.isNotEmpty ? recent.first.steps : 0;
+    final sleepToday = recent.isNotEmpty ? recent.first.sleepHours : 0.0;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Hubo One", style: TextStyle(color: Palette.primary)),
-        backgroundColor: Palette.surface,
+        title: const Text("Hubo One", style: TextStyle(color: Palette.surface)),
+        backgroundColor: Palette.accent,
         actions: [
           IconButton(
             tooltip: 'Logout',
-            icon: const Icon(Icons.logout, color: Palette.primary),
+            icon: const Icon(Icons.logout, color: Palette.surface),
             onPressed: () {
               // Trigger logout and navigate to login screen.
               ref.read(authProvider.notifier).logout();
@@ -115,7 +103,7 @@ class DashboardScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(8),
                   child: Column(
                     children: [
                       const Align(
@@ -127,13 +115,13 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: 160,
-                        child: SimpleLineChart(
+                        height: 200,
+                        child: HeartRateLineChart(
                           values: hrWeek,
                           color: Colors.red,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 24),
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -143,13 +131,13 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: 120,
+                        height: 150,
                         child: SimpleBarChart(
-                          values: stWeek,
-                          color: Colors.blue,
+                          values: stepsWeek,
+                          color: Colors.green,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 24),
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -157,12 +145,12 @@ class DashboardScreen extends ConsumerWidget {
                           style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 24),
                       SizedBox(
-                        height: 120,
+                        height: 150,
                         child: SimpleBarChart(
-                          values: slWeek,
-                          color: Colors.green,
+                          values: sleepWeek,
+                          color: Colors.blue,
                         ),
                       ),
                     ],
@@ -173,114 +161,6 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class SimpleLineChart extends StatelessWidget {
-  const SimpleLineChart({
-    Key? key,
-    required this.values,
-    this.color = Colors.blue,
-  }) : super(key: key);
-
-  final List<double> values;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: CustomPaint(
-        painter: _LineChartPainter(values: values, color: color),
-        size: Size.infinite,
-      ),
-    );
-  }
-}
-
-class _LineChartPainter extends CustomPainter {
-  _LineChartPainter({required this.values, required this.color});
-
-  final List<double> values;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.isEmpty) return;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..isAntiAlias = true;
-
-    final double minV = values.reduce((a, b) => a < b ? a : b);
-    final double maxV = values.reduce((a, b) => a > b ? a : b);
-    final double range = (maxV - minV) == 0 ? 1 : (maxV - minV);
-
-    final path = Path();
-    for (var i = 0; i < values.length; i++) {
-      final x = (i / (values.length - 1)) * size.width;
-      final y = size.height - ((values[i] - minV) / range) * size.height;
-      if (i == 0)
-        path.moveTo(x, y);
-      else
-        path.lineTo(x, y);
-    }
-
-    // Draw grid lines
-    final gridPaint = Paint()..color = Colors.grey.withOpacity(0.2);
-    for (int i = 0; i < 4; i++) {
-      final dy = i / 3 * size.height;
-      canvas.drawLine(Offset(0, dy), Offset(size.width, dy), gridPaint);
-    }
-
-    canvas.drawPath(path, paint);
-    // Draw points
-    final dotPaint = Paint()..color = color;
-    for (var i = 0; i < values.length; i++) {
-      final x = (i / (values.length - 1)) * size.width;
-      final y = size.height - ((values[i] - minV) / range) * size.height;
-      canvas.drawCircle(Offset(x, y), 3, dotPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _LineChartPainter oldDelegate) =>
-      oldDelegate.values != values || oldDelegate.color != color;
-}
-
-class SimpleBarChart extends StatelessWidget {
-  const SimpleBarChart({
-    Key? key,
-    required this.values,
-    this.color = Colors.blue,
-  }) : super(key: key);
-
-  final List<double> values;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final maxV = values.isEmpty ? 1.0 : values.reduce((a, b) => a > b ? a : b);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: values.map((v) {
-        final pct = maxV == 0 ? 0.0 : (v / maxV).clamp(0.0, 1.0);
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Container(
-              height: pct * 100,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 }

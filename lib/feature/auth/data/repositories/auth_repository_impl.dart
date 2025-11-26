@@ -1,6 +1,8 @@
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart';
+import 'package:hubo/core/db/app_database.dart';
 import 'package:hubo/feature/auth/data/api/auth_api.dart';
 import 'package:hubo/feature/auth/domain/entities/user_entity.dart';
 import 'package:hubo/feature/auth/domain/repositories/auth_repository.dart';
@@ -12,8 +14,9 @@ import 'package:hubo/feature/auth/domain/repositories/auth_repository.dart';
 /// or generic [Exception].
 class AuthRepositoryImpl implements AuthRepository {
   final AuthApi _api;
+  final AppDb db;
 
-  AuthRepositoryImpl(this._api);
+  AuthRepositoryImpl(this._api, this.db);
 
   @override
   Future<UserEntity> login(String email, String password) async {
@@ -93,5 +96,48 @@ class AuthRepositoryImpl implements AuthRepository {
       log('Unexpected error during signup: $e');
       rethrow;
     }
+  }
+
+  @override
+  Future<String?> getToken() {
+    return db.userDao.getToken();
+  }
+
+  @override
+  Future<void> clearUser() async {
+    await db.userDao.deleteAllUsers();
+  }
+
+  @override
+  Future<int> saveToken(String email, String token) async {
+    final existing = await db.userDao.getUser();
+
+    if (existing != null) {
+      return db.userDao.updateToken(existing.id!, token);
+    } else {
+      final companion = UserCompanion.insert(
+        email: email,
+        password: '',
+        token: Value(token),
+      );
+      return db.userDao.addUser(companion);
+    }
+  }
+
+  @override
+  Future<UserEntity?> getUser() async {
+    final userData = await db.userDao.getUser();
+    if (userData == null) return null;
+
+    return UserEntity(
+      id: userData.id,
+      email: userData.email,
+      token: userData.token,
+    );
+  }
+
+  @override
+  Future<int> addUser(UserCompanion user) {
+    return db.userDao.addUser(user);
   }
 }

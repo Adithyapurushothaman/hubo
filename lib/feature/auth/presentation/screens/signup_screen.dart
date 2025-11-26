@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hubo/core/provider/global_provider.dart';
 import 'package:hubo/core/routing/routes.dart';
-import 'package:hubo/feature/auth/data/providers.dart';
 import 'package:hubo/core/constants/palette.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
